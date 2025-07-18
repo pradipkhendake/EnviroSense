@@ -1,0 +1,36 @@
+body.bg-dark .card {
+    background-color: #2c2c2c;
+    color: white;
+}
+
+body.bg-dark .card-header {
+    background-color: #444 !important;
+    color: white !important;
+}
+<style>
+  #about-developer {
+    background: linear-gradient(to right, #e0f7fa, #ffffff);
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 40px;
+    animation: fadeIn 1.5s ease-in-out;
+  }
+
+  #about-developer img {
+    vertical-align: middle;
+  }
+
+  #about-developer a {
+    color: #007bff;
+    text-decoration: none;
+  }
+
+  #about-developer a:hover {
+    text-decoration: underline;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>

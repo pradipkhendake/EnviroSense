@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EnviroSense – Air Quality & Weather</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Bootstrap, Chart.js, Google Fonts, Lordicon -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.lordicon.com/lordicon.js"></script>
+
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            transition: all 0.4s ease;
+        }
+
+        body.light-mode {
+            background-size: 600% 600%;
+            animation: gradientShift 15s ease infinite;
+            color: #212529;
+        }
+
+        body.dark-mode {
+            background: linear-gradient(270deg, #1a1a2e, #16213e, #0f3460);
+            background-size: 600% 600%;
+            animation: gradientShift 15s ease infinite;
+            color: #f1f1f1;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .bg-good {
+            background: linear-gradient(270deg, #d0f5d3, #e8f5e9, #ffffff);
+        }
+
+        .bg-moderate {
+            background: linear-gradient(270deg, #fff9c4, #fffde7, #ffffff);
+        }
+
+        .bg-unhealthy {
+            background: linear-gradient(270deg, #ffe0e0, #fff3e0, #ffffff);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+        }
+
+        .card {
+            transition: transform 0.3s ease;
+            border-radius: 12px;
+        }
+
+        .card:hover {
+            transform: scale(1.02);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        h1 {
+            font-weight: 700;
+            color: #00695c;
+        }
+
+        .alert {
+            border-radius: 10px;
+        }
+
+        select, button {
+            font-weight: 500;
+        }
+
+        canvas {
+            max-height: 250px;
+        }
+    </style>
+</head>
+<body id="body" class="light-mode">
+
+    <!-- Theme Toggle Button -->
+    <div class="theme-toggle">
+        <button onclick="toggleTheme()" class="btn btn-outline-dark btn-sm">🌗 Theme</button>
+    </div>
+
+    <!-- Top Quote -->
+    <div class="alert alert-success text-center fw-semibold fs-5 mt-3 shadow-sm">
+        🌿 Breathe Clean, Live Green. Your Health Begins with the Air You Breathe — Let EnviroSense Guide You... ❤️‍🩹
+    </div>
+
+    <div class="container">
+        <h1 class="text-center mb-4">🌍 EnviroSense Dashboard</h1>
+
+        <!-- City Selection -->
+        <form method="POST" class="mb-4 text-center">
+            <label for="city" class="form-label fw-bold">Select City:</label>
+            <select name="city" id="city" class="form-select d-inline-block w-auto mx-2">
+                {% for city in cities %}
+                    <option value="{{ city }}" {% if city == selected_city %}selected{% endif %}>{{ city }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Check</button>
+        </form>
+
+        <!-- Weather Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-white bg-success shadow">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <span>Temperature 🌡️</span>
+                        <lord-icon src="https://cdn.lordicon.com/ivhjpjsw.json" trigger="loop" delay="1000" style="width:30px;height:30px"></lord-icon>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ temp }} °C</h5>
+                        <p class="card-text">As of {{ time }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-info shadow">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <span>Wind Speed 💨</span>
+                        <lord-icon src="https://cdn.lordicon.com/dsctnbcn.json" trigger="loop" delay="1000" style="width:30px;height:30px"></lord-icon>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ wind }} km/h</h5>
+                        <p class="card-text">Wind conditions update</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-danger shadow">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <span>PM2.5 🌫️</span>
+                        <lord-icon src="https://cdn.lordicon.com/gqzfzudq.json" trigger="loop" delay="1000" style="width:30px;height:30px"></lord-icon>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ pm25 }} µg/m³</h5>
+                        <p class="card-text">{{ pm25_message }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other Pollutants -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card border-primary shadow">
+                    <div class="card-header fw-semibold">PM10 (Coarse Particles)</div>
+                    <div class="card-body text-primary">
+                        <h5 class="card-title">{{ pm10 }} µg/m³</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-warning shadow">
+                    <div class="card-header fw-semibold">Carbon Monoxide (CO)</div>
+                    <div class="card-body text-warning">
+                        <h5 class="card-title">{{ co }} µg/m³</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PM2.5 Historical Chart -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white text-center">PM2.5 – Last 24 Hours</div>
+            <div class="card-body">
+                <canvas id="pmChart"></canvas>
+            </div>
+        </div>
+
+        <!-- PM2.5 Prediction Chart -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-dark text-center">PM2.5 Forecast – Next 6 Hours</div>
+            <div class="card-body">
+                <canvas id="pmForecastChart"></canvas>
+            </div>
+        </div>
+
+        <!-- ⚠️ Air Quality Health Alerts -->
+        <div class="alert alert-warning shadow-sm">
+            <h5 class="fw-bold">⚠️ Air Quality Health Alerts:</h5>
+            <ul class="mb-2">
+                <li><strong>PM2.5 Warning:</strong> PM2.5 levels are high today. These fine particles can enter your lungs and bloodstream. <span class="fw-semibold">Try to stay indoors</span> and wear a mask if you're outside. 🫁</li>
+                <li><strong>PM10 Alert:</strong> PM10 is high – this means there's a lot of dust in the air. <span class="fw-semibold">Avoid outdoor activities</span> and use a mask to protect yourself. 🧼</li>
+            </ul>
+            <p class="mb-0 text-muted"><small>ℹ️ PM2.5 = tiny particles that can deeply affect breathing. PM10 = larger dust particles that irritate nose and throat.</small></p>
+        </div>
+
+        <!-- Bottom Message -->
+        <div class="alert alert-info text-center fw-semibold mt-4">
+            🧠 “Your environment shapes your well-being. Track it, improve it, live better.” – EnviroSense
+        </div>
+    </div>
+
+    <!-- Theme & Chart Script -->
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('light-mode');
+            body.classList.toggle('dark-mode');
+        }
+
+        const labels = {{ chart_labels | tojson }};
+        const values = {{ chart_values | tojson }};
+        const predLabels = {{ pred_labels | tojson }};
+        const predValues = {{ pred_values | tojson }};
+
+        // Historical PM2.5 Chart
+        new Chart(document.getElementById('pmChart'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'PM2.5 (µg/m³)',
+                    data: values,
+                    borderColor: '#00c853',
+                    backgroundColor: 'rgba(0,200,83,0.2)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+        // Forecast PM2.5 Chart
+        new Chart(document.getElementById('pmForecastChart'), {
+            type: 'line',
+            data: {
+                labels: predLabels,
+                datasets: [{
+                    label: 'Predicted PM2.5 (µg/m³)',
+                    data: predValues,
+                    borderColor: '#ff4081',
+                    backgroundColor: 'rgba(255,64,129,0.2)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+        // Dynamic Background Based on PM2.5
+        const pm25Value = {{ pm25 | default(0) }};
+        const body = document.getElementById("body");
+
+        if (pm25Value <= 50) {
+            body.classList.add("bg-good");
+        } else if (pm25Value <= 100) {
+            body.classList.add("bg-moderate");
+        } else {
+            body.classList.add("bg-unhealthy");
+        }
+    </script>
+    <hr class="mt-5 mb-3">
+<section id="about-developer" class="text-center mt-4">
+  <img src="{{ url_for('static', filename='images/dev-logo.gif') }}" alt="Developer Logo" width="100" class="mb-3" style="border-radius: 50%; box-shadow: 0 0 10px #00ffcc;">
+  <h5 class="fw-bold">👨‍💻 About Developer</h5>
+
+  <p>
+    <img src="{{ url_for('static', filename='icons/user.png') }}" width="20" class="me-2"> 
+    <strong>Name:</strong> Khendake Pradip Goraksh
+  </p>
+  
+  <p>
+    <img src="{{ url_for('static', filename='icons/email.png') }}" width="20" class="me-2"> 
+    <strong>Email:</strong> 
+    <a href="mailto:pradipkhendake96@gmail.com">pradipkhendake96@gmail.com</a>
+  </p>
+  <p>
+    <img src="{{ url_for('static', filename='icons/linkedin.png') }}" width="20" class="me-2"> 
+    <strong>LinkedIn:</strong> 
+    <a href="https://linkedin.com/in/pradip-khendake" target="_blank">linkedin.com/in/pradip-khendake</a>
+  </p>
+  <p>
+    <img src="{{ url_for('static', filename='icons/github.png') }}" width="20" class="me-2"> 
+    <strong>GitHub:</strong> 
+    <a href="https://github.com/pradipkhendake" target="_blank">github.com/pradipkhendake</a>
+  </p>
+  <p>
+    <img src="{{ url_for('static', filename='icons/phone.png') }}" width="20" class="me-2"> 
+    <strong>Contact:</strong> +91 8261059710
+  </p>
+</section>
+
+</body>
+</html>
